@@ -1,0 +1,44 @@
+From 13a3f1181c21e811e35391f1cc80399f0005e5dd Mon Sep 17 00:00:00 2001
+From: ManhLong79748 <long79748@gmail.com>
+Date: Fri, 14 Nov 2025 14:09:50 +0700
+Subject: [PATCH] Enable spi ili9341
+
+---
+ arch/arm/boot/dts/bcm2711-rpi-4-b.dts | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/arch/arm/boot/dts/bcm2711-rpi-4-b.dts b/arch/arm/boot/dts/bcm2711-rpi-4-b.dts
+index 21b20e334b1a..50e632f04b3e 100644
+--- a/arch/arm/boot/dts/bcm2711-rpi-4-b.dts
++++ b/arch/arm/boot/dts/bcm2711-rpi-4-b.dts
+@@ -557,6 +557,27 @@
+ 	status = "disabled";
+ };
+ 
++/* === Custom SPI ILI9341 Enable Patch === */
++
++&spidev0 {
++	status = "disabled";
++};
++
++&spi0 {
++	status = "okay";
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	ili9341: ili9341@0 {
++		compatible = "mr,custom_ili9341";
++		reg = <0x0>;
++		spi-max-frequency = <32000000>;
++		spi-bits-per-word = <8>;
++		status = "okay";
++		dc-gpios = <&gpio 25 0>;
++	};
++};
++
+ / {
+ 	__overrides__ {
+ 		act_led_gpio = <&act_led>,"gpios:4";
+-- 
+2.34.1
+

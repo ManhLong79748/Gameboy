@@ -1,0 +1,5 @@
+config FB_ILI9341
+    tristate "ILI9341 TFT LCD Driver"
+    depends on FB && SPI
+    help
+      Say Y here if you want support for the ILI9341 SPI display driver.

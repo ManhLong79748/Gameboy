@@ -1,7 +1,7 @@
 SUMMARY = "A Recipes to demo how to intergrate qt5 app to yocto"
 LICENSE = "CLOSED"
 
-DEPENDS:append = " cmake qtbase qtdeclarative-native"
+DEPENDS:append = " cmake qtbase qtdeclarative qtdeclarative-native"
 RDEPENDS:${PN}:append = " qtbase qtdeclarative"
 
 SRC_URI:append = " file://yoctoqt5demo "

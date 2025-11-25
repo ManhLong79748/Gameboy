@@ -1,6 +1,6 @@
-From a482e0517951f6eb8ecd1e2ca1c588163bf77d1e Mon Sep 17 00:00:00 2001
+From 86707de745d88322399e29799afa6f3c39b04425 Mon Sep 17 00:00:00 2001
 From: ManhLong79748 <long79748@gmail.com>
-Date: Fri, 14 Nov 2025 16:01:26 +0700
+Date: Tue, 25 Nov 2025 07:33:35 +0700
 Subject: [PATCH] Add ILI9341 SPI Fb display driver
 
 ---
@@ -10,11 +10,11 @@ Subject: [PATCH] Add ILI9341 SPI Fb display driver
  drivers/video/fbdev/ili9341_cus/Kconfig   |   5 +
  drivers/video/fbdev/ili9341_cus/Makefile  |   3 +
  drivers/video/fbdev/ili9341_cus/display.c | 143 ++++++++++++
- drivers/video/fbdev/ili9341_cus/display.h |  23 ++
- drivers/video/fbdev/ili9341_cus/ili9341.c | 267 ++++++++++++++++++++++
+ drivers/video/fbdev/ili9341_cus/display.h |  24 ++
+ drivers/video/fbdev/ili9341_cus/ili9341.c | 270 ++++++++++++++++++++++
  drivers/video/fbdev/ili9341_cus/ili9341.h |  28 +++
  drivers/video/fbdev/ili9341_cus/memory.h  |  50 ++++
- 10 files changed, 522 insertions(+)
+ 10 files changed, 526 insertions(+)
  create mode 100644 drivers/video/fbdev/ili9341_cus/Kconfig
  create mode 100644 drivers/video/fbdev/ili9341_cus/Makefile
  create mode 100644 drivers/video/fbdev/ili9341_cus/display.c
@@ -73,7 +73,7 @@ index 000000000000..a0b3ecca1e67
 \ No newline at end of file
 diff --git a/drivers/video/fbdev/ili9341_cus/display.c b/drivers/video/fbdev/ili9341_cus/display.c
 new file mode 100644
-index 000000000000..ffcb8d2e6f99
+index 000000000000..8d4f4523690e
 --- /dev/null
 +++ b/drivers/video/fbdev/ili9341_cus/display.c
 @@ -0,0 +1,143 @@
@@ -100,7 +100,7 @@ index 000000000000..ffcb8d2e6f99
 +    1, ILI9341_VMCTR2, 0x86,
 +    1, ILI9341_MADCTL, 0x40, /* RGB */
 +    1, ILI9341_VSCRSADD, 0x00,
-+    1, ILI9341_PIXFMT, 0x66, /* 18 bits per pixel */
++    1, ILI9341_PIXFMT, 0x55, /* 16 bits per pixel (RGB565) */
 +    2, ILI9341_FRMCTR1, 0x00, 0x18,
 +    3, ILI9341_DFUNCTR, 0x08, 0x82, 0x27,
 +    0x00,
@@ -223,10 +223,10 @@ index 000000000000..ffcb8d2e6f99
 \ No newline at end of file
 diff --git a/drivers/video/fbdev/ili9341_cus/display.h b/drivers/video/fbdev/ili9341_cus/display.h
 new file mode 100644
-index 000000000000..713a665452fd
+index 000000000000..00a10247c70b
 --- /dev/null
 +++ b/drivers/video/fbdev/ili9341_cus/display.h
-@@ -0,0 +1,23 @@
+@@ -0,0 +1,24 @@
 +#ifndef _ILI9341_DISPLAY_H
 +#define _ILI9341_DISPLAY_H
 +
@@ -236,15 +236,16 @@ index 000000000000..713a665452fd
 +
 +#define ILI9341_HEIGHT              320
 +#define ILI9341_WIDTH               240
-+#define ILI9341_BYTES_PER_PIXEL     3
++#define ILI9341_BYTES_PER_PIXEL     2
 +#define ILI9341_BITS_PER_PIXEL      (8 * ILI9341_BYTES_PER_PIXEL)
-+#define ILI9341_COLOR_LENGTH        6
++#define ILI9341_COLOR_LENGTH_RED_BLUE 5
++#define ILI9341_COLOR_LENGTH_GREEN  6
 +#define ILI9341_BUFFER_SIZE         (ILI9341_HEIGHT * ILI9341_WIDTH * ILI9341_BYTES_PER_PIXEL)
 +#define ILI9341_LINE_LENGTH         (ILI9341_WIDTH * ILI9341_BYTES_PER_PIXEL)
 +
-+#define ILI9341_RED_OFFSET          18
-+#define ILI9341_GREEN_OFFSET        10
-+#define ILI9341_BLUE_OFFSET         2
++#define ILI9341_RED_OFFSET          11
++#define ILI9341_GREEN_OFFSET        5
++#define ILI9341_BLUE_OFFSET         0
 +
 +int ili9341_init(struct device_data *dev_data);
 +int ili9341_send_display_buff(struct device_data *dev_data);
@@ -253,16 +254,17 @@ index 000000000000..713a665452fd
 \ No newline at end of file
 diff --git a/drivers/video/fbdev/ili9341_cus/ili9341.c b/drivers/video/fbdev/ili9341_cus/ili9341.c
 new file mode 100644
-index 000000000000..157822bf34aa
+index 000000000000..19e08f82df87
 --- /dev/null
 +++ b/drivers/video/fbdev/ili9341_cus/ili9341.c
-@@ -0,0 +1,267 @@
+@@ -0,0 +1,270 @@
 +#include <linux/module.h>
 +#include <linux/spi/spi.h>
 +#include <linux/of.h>
 +#include <linux/delay.h>
 +#include <linux/fb.h>
 +#include <linux/dma-mapping.h>
++#include <asm/page.h>
 +
 +#include "ili9341.h"
 +#include "display.h"
@@ -444,9 +446,9 @@ index 000000000000..157822bf34aa
 +{
 +    if (info->fix.visual == FB_VISUAL_TRUECOLOR && regno < ILI9341_PSEUDO_PALETTE_SIZE)
 +    {
-+        ((u32 *)(info->pseudo_palette))[regno] =
-+            ((red & 0x3F) << ILI9341_RED_OFFSET) | ((green & 0x3F) << ILI9341_GREEN_OFFSET) | ((blue & 0x3F) << ILI9341_BLUE_OFFSET);
-+        return 0;
++    ((u32 *)(info->pseudo_palette))[regno] =
++    ((red & 0x1F) << ILI9341_RED_OFFSET) | ((green & 0x3F) << ILI9341_GREEN_OFFSET) | ((blue & 0x1F) << ILI9341_BLUE_OFFSET);
++    return 0;
 +    }
 +    return -EINVAL;
 +}
@@ -461,15 +463,15 @@ index 000000000000..157822bf34aa
 +    var->grayscale = 0;
 +
 +    var->red.offset = ILI9341_RED_OFFSET;
-+    var->red.length = ILI9341_COLOR_LENGTH;
++    var->red.length = ILI9341_COLOR_LENGTH_RED_BLUE;
 +    var->red.msb_right = 0;
 +
 +    var->green.offset = ILI9341_GREEN_OFFSET;
-+    var->green.length = ILI9341_COLOR_LENGTH;
++    var->green.length = ILI9341_COLOR_LENGTH_GREEN;
 +    var->green.msb_right = 0;
 +
 +    var->blue.offset = ILI9341_BLUE_OFFSET;
-+    var->blue.length = ILI9341_COLOR_LENGTH;
++    var->blue.length = ILI9341_COLOR_LENGTH_RED_BLUE;
 +    var->blue.msb_right = 0;
 +
 +    var->transp.offset = 0;
@@ -492,6 +494,8 @@ index 000000000000..157822bf34aa
 +    info->fix.type = FB_TYPE_PACKED_PIXELS;
 +    info->fix.line_length = ILI9341_LINE_LENGTH;
 +    info->fix.accel = FB_ACCEL_NONE;
++    info->fix.smem_start = __pa(dev_data->display_buff);
++    info->fix.smem_len = ILI9341_BUFFER_SIZE;
 +    sprintf(info->fix.id, "CUST_ILI9341");
 +
 +    info->var.xres = ILI9341_WIDTH;
@@ -503,15 +507,15 @@ index 000000000000..157822bf34aa
 +    info->var.activate = FB_ACTIVATE_NOW;
 +
 +    info->var.red.offset = ILI9341_RED_OFFSET;
-+    info->var.red.length = ILI9341_COLOR_LENGTH;
++    info->var.red.length = ILI9341_COLOR_LENGTH_RED_BLUE;
 +    info->var.red.msb_right = 0;
 +
 +    info->var.green.offset = ILI9341_GREEN_OFFSET;
-+    info->var.green.length = ILI9341_COLOR_LENGTH;
++    info->var.green.length = ILI9341_COLOR_LENGTH_GREEN;
 +    info->var.green.msb_right = 0;
 +
 +    info->var.blue.offset = ILI9341_BLUE_OFFSET;
-+    info->var.blue.length = ILI9341_COLOR_LENGTH;
++    info->var.blue.length = ILI9341_COLOR_LENGTH_RED_BLUE;
 +    info->var.blue.msb_right = 0;
 +
 +    info->var.transp.offset = 0;

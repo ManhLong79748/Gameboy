@@ -4,6 +4,7 @@
 #include <linux/delay.h>
 #include <linux/fb.h>
 #include <linux/dma-mapping.h>
+#include <asm/page.h>
 
 #include "ili9341.h"
 #include "display.h"
@@ -185,9 +186,9 @@ static int ili9341_setcolreg(unsigned regno, unsigned red, unsigned green,
 {
     if (info->fix.visual == FB_VISUAL_TRUECOLOR && regno < ILI9341_PSEUDO_PALETTE_SIZE)
     {
-        ((u32 *)(info->pseudo_palette))[regno] =
-            ((red & 0x3F) << ILI9341_RED_OFFSET) | ((green & 0x3F) << ILI9341_GREEN_OFFSET) | ((blue & 0x3F) << ILI9341_BLUE_OFFSET);
-        return 0;
+    ((u32 *)(info->pseudo_palette))[regno] =
+    ((red & 0x1F) << ILI9341_RED_OFFSET) | ((green & 0x3F) << ILI9341_GREEN_OFFSET) | ((blue & 0x1F) << ILI9341_BLUE_OFFSET);
+    return 0;
     }
     return -EINVAL;
 }
@@ -202,15 +203,15 @@ static int ili9341_check_var(struct fb_var_screeninfo *var, struct fb_info *info
     var->grayscale = 0;
 
     var->red.offset = ILI9341_RED_OFFSET;
-    var->red.length = ILI9341_COLOR_LENGTH;
+    var->red.length = ILI9341_COLOR_LENGTH_RED_BLUE;
     var->red.msb_right = 0;
 
     var->green.offset = ILI9341_GREEN_OFFSET;
-    var->green.length = ILI9341_COLOR_LENGTH;
+    var->green.length = ILI9341_COLOR_LENGTH_GREEN;
     var->green.msb_right = 0;
 
     var->blue.offset = ILI9341_BLUE_OFFSET;
-    var->blue.length = ILI9341_COLOR_LENGTH;
+    var->blue.length = ILI9341_COLOR_LENGTH_RED_BLUE;
     var->blue.msb_right = 0;
 
     var->transp.offset = 0;
@@ -233,6 +234,8 @@ static void ili9341_configure_fb(struct device_data *dev_data)
     info->fix.type = FB_TYPE_PACKED_PIXELS;
     info->fix.line_length = ILI9341_LINE_LENGTH;
     info->fix.accel = FB_ACCEL_NONE;
+    info->fix.smem_start = __pa(dev_data->display_buff);
+    info->fix.smem_len = ILI9341_BUFFER_SIZE;
     sprintf(info->fix.id, "CUST_ILI9341");
 
     info->var.xres = ILI9341_WIDTH;
@@ -244,15 +247,15 @@ static void ili9341_configure_fb(struct device_data *dev_data)
     info->var.activate = FB_ACTIVATE_NOW;
 
     info->var.red.offset = ILI9341_RED_OFFSET;
-    info->var.red.length = ILI9341_COLOR_LENGTH;
+    info->var.red.length = ILI9341_COLOR_LENGTH_RED_BLUE;
     info->var.red.msb_right = 0;
 
     info->var.green.offset = ILI9341_GREEN_OFFSET;
-    info->var.green.length = ILI9341_COLOR_LENGTH;
+    info->var.green.length = ILI9341_COLOR_LENGTH_GREEN;
     info->var.green.msb_right = 0;
 
     info->var.blue.offset = ILI9341_BLUE_OFFSET;
-    info->var.blue.length = ILI9341_COLOR_LENGTH;
+    info->var.blue.length = ILI9341_COLOR_LENGTH_RED_BLUE;
     info->var.blue.msb_right = 0;
 
     info->var.transp.offset = 0;

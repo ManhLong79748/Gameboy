@@ -15,6 +15,6 @@ What was done:
 - config and run Tetris.gb
 
 Demo Incomplete
-![gamboi](https://github.com/user-attachments/assets/f9fd4a2b-afbe-423c-ab5e-1be32c0c1e93)
+<img src="https://drive.google.com/uc?export=view&id=1vmPYf40TOKSUO41grat89AAg-_mMIbev" width="300">
 
 

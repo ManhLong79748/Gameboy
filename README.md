@@ -16,6 +16,6 @@ What was done:
 
 Demo Incomplete
 
-<img src="https://drive.google.com/uc?export=view&id=1vmPYf40TOKSUO41grat89AAg-_mMIbev" width="600">
+<img src="https://drive.google.com/uc?export=view&id=1vmPYf40TOKSUO41grat89AAg-_mMIbev" width="500">
 
 

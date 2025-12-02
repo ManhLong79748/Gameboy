@@ -15,8 +15,8 @@ struct button_data {
     int irq;
     unsigned int keycode;
     struct input_dev *input;
-    unsigned long last_time; // Track thời gian debounce
-    unsigned int debounce;   // Debounce interval (ms) - SỬA: Thêm field này
+    unsigned long last_time; 
+    unsigned int debounce;   // Debounce interval (ms)
 };
 
 static struct button_data buttons[6];
@@ -36,7 +36,7 @@ static irqreturn_t button_handler(int irq, void *dev_id) {
     btn->last_time = now;
 
     int value = gpiod_get_value(btn->gpiod);
-    // SỬA: Thêm debug raw value để check logic
+
     pr_info("Raw GPIO value: %d\n", value);
     int pressed = !value; // ACTIVE_LOW: low=pressed
     pr_info("Button %d %s\n", btn->keycode, pressed ? "Pressed" : "Released");
@@ -50,7 +50,7 @@ static int my_pdrv_probe(struct platform_device *pdev) {
     struct input_dev *input;
     int i, ret;
     u32 debounce_ms = 200; // Default 200ms
-    // SỬA: Parse debounce-interval từ DT (ms), fallback default nếu không có
+
     of_property_read_u32(dev->of_node, "debounce-interval", &debounce_ms);
 
     // Create input device
@@ -76,18 +76,15 @@ static int my_pdrv_probe(struct platform_device *pdev) {
             ret = PTR_ERR(buttons[i].gpiod);
             goto err_cleanup;
         }
-        // SỬA: Xóa gpiod_set_debounce (không hiệu quả), dùng manual thay thế
-        // gpiod_set_debounce(buttons[i].gpiod, debounce_ms * 1000); // Bỏ
 
         buttons[i].irq = gpiod_to_irq(buttons[i].gpiod);
         buttons[i].keycode = keycodes[i];
         buttons[i].input = input;
-        buttons[i].debounce = debounce_ms; // SỬA: Lưu debounce per button
+        buttons[i].debounce = debounce_ms;
         buttons[i].last_time = 0; // Init debounce time
 
         set_bit(keycodes[i], input->keybit); // Enable keycode
 
-        // SỬA: Thay flags thành RISING + FALLING để detect cả pressed/released
         ret = request_irq(buttons[i].irq, button_handler, IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING | IRQF_SHARED,
                           "button_irq", &buttons[i]);
         if (ret) {
@@ -103,7 +100,7 @@ static int my_pdrv_probe(struct platform_device *pdev) {
     pr_info("Probe successful\n");
     return 0;
 
-err_cleanup: // SỬA: Thêm error handling - cleanup các buttons trước đó
+err_cleanup:
     while (--i >= 0) {
         free_irq(buttons[i].irq, &buttons[i]);
         gpiod_put(buttons[i].gpiod);

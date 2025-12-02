@@ -14,5 +14,7 @@ What was done:
 - intergrate mGBA emulator
 - config and run Tetris.gb
 
+Demo Incomplete
+![gamboi](https://github.com/user-attachments/assets/f9fd4a2b-afbe-423c-ab5e-1be32c0c1e93)
 
 

@@ -15,6 +15,7 @@ What was done:
 - config and run Tetris.gb
 
 Demo Incomplete
-<img src="https://drive.google.com/uc?export=view&id=1vmPYf40TOKSUO41grat89AAg-_mMIbev" width="300">
+
+<img src="https://drive.google.com/uc?export=view&id=1vmPYf40TOKSUO41grat89AAg-_mMIbev" width="600">
 
 

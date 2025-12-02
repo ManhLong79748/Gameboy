@@ -1,0 +1,6 @@
+# drivers/mgpio/Kconfig
+config MGPIO_BUTTON
+    tristate "Raspberry Pi GPIO Button Driver"
+    depends on INPUT && GPIOLIB && OF
+    help
+      Say Y here to enable support for GPIO-based buttons on Raspberry Pi as input devices.
